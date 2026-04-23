@@ -91,6 +91,32 @@ const codonLabel = (entry: CodonEntry | undefined) => {
   return `${entry.aminoAcid.name} (${entry.aminoAcid.oneLetter})`;
 };
 
+const getMemoryHint = (oneLetter: string, codons: string[]) => {
+  if (oneLetter === "I") {
+    return {
+      mnemonic: "AU以下",
+      caution: "注意: AUGはM (Met)"
+    };
+  }
+
+  if (oneLetter === "L") {
+    return {
+      mnemonic: "CU以下 + UUA/UUG",
+      caution: "注意: UUU/UUCはF (Phe)"
+    };
+  }
+
+  if (codons.length === 0) return { mnemonic: "-" };
+  if (codons.length === 1) return { mnemonic: `${codons[0]}固定` };
+
+  const heads = Array.from(new Set(codons.map((codon) => codon.slice(0, 2))));
+  if (heads.length === 1) {
+    return { mnemonic: `${heads[0]}以下` };
+  }
+
+  return { mnemonic: `${heads.join(" / ")}以下` };
+};
+
 export function BioStudyApp() {
   const [phase, setPhase] = useState<Phase>("learn");
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -306,8 +332,8 @@ export function BioStudyApp() {
                 {activeAminos.map((amino) => {
                   const codons = activeCodons
                     .filter((entry) => entry.aminoAcid?.oneLetter === amino.oneLetter)
-                    .map((entry) => entry.codon)
-                    .join(", ");
+                    .map((entry) => entry.codon);
+                  const memoryHint = getMemoryHint(amino.oneLetter, codons);
 
                   return (
                     <article className="bio-memory-card" key={amino.oneLetter}>
@@ -316,7 +342,9 @@ export function BioStudyApp() {
                       </p>
                       <p>{amino.name}</p>
                       <p className="bio-memory-ja">{amino.readingJa}</p>
-                      <p className="bio-memory-sub">Codons: {codons}</p>
+                      <p className="bio-memory-note">覚え方: {memoryHint.mnemonic}</p>
+                      {memoryHint.caution && <p className="bio-memory-caution">{memoryHint.caution}</p>}
+                      <p className="bio-memory-sub">Codons: {codons.join(", ")}</p>
                     </article>
                   );
                 })}
